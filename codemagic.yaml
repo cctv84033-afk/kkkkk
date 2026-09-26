@@ -1,0 +1,35 @@
+workflows:
+  gameboost-android:
+    name: GameBoost Android APK
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      java: 17
+    scripts:
+      - name: Unpack GameBoost source
+        script: |
+          set -e
+          rm -rf "$CM_BUILD_DIR/gameboost-src"
+          mkdir -p "$CM_BUILD_DIR/gameboost-src"
+          unzip -q "$CM_BUILD_DIR/GameBoost_Codemagic.zip" -d "$CM_BUILD_DIR/gameboost-src"
+
+      - name: Prepare Android SDK location
+        script: |
+          set -e
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/gameboost-src/local.properties"
+
+      - name: Install Gradle 8.9
+        script: |
+          set -e
+          curl -L --fail --retry 3             -o "$CM_BUILD_DIR/gradle-8.9-bin.zip"             "https://services.gradle.org/distributions/gradle-8.9-bin.zip"
+          rm -rf "$CM_BUILD_DIR/gradle-8.9"
+          unzip -q "$CM_BUILD_DIR/gradle-8.9-bin.zip" -d "$CM_BUILD_DIR"
+
+      - name: Build GameBoost debug APK
+        script: |
+          set -e
+          cd "$CM_BUILD_DIR/gameboost-src"
+          "$CM_BUILD_DIR/gradle-8.9/bin/gradle" assembleDebug --no-daemon
+
+    artifacts:
+      - gameboost-src/app/build/outputs/**/*.apk
